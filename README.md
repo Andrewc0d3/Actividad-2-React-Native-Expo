@@ -1,1 +1,0 @@
-# Actividad-2-React-Native-Expo
