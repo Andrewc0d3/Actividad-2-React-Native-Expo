@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TextInput } from 'react-native';
+import { View, Text, Button, StyleSheet, TextInput, FlatList } from 'react-native';
 
 export default function App() {
   const [menu, setMenu] = useState('menu');
   const [producto, setProducto] = useState(null);
   const [precioUsuario, setPrecioUsuario] = useState('');
   const [resultado, setResultado] = useState('');
+  const [listaProductos, setListaProductos] = useState([]);
 
+  // 🔹 Obtener producto aleatorio
   const fetchProducto = async () => {
     try {
       const res = await fetch('https://fakeapi.net/products');
@@ -21,30 +23,41 @@ export default function App() {
     }
   };
 
+  // 🔹 Obtener lista de productos ordenados
+  const fetchListaProductos = async () => {
+    try {
+      const res = await fetch('https://fakeapi.net/products');
+      const json = await res.json();
+      const data = json.data || json;
+
+      // Ordenar por precio
+      const ordenados = data.sort((a, b) => a.price - b.price);
+
+      setListaProductos(ordenados);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     fetchProducto();
   }, []);
 
+  // 🔹 Validar precio
   const comprobarPrecio = () => {
     if (!precioUsuario) return;
 
     const precioReal = producto.price;
-    const PrecioIngresado = parseFloat(precioUsuario);
+    const precioIngresado = parseFloat(precioUsuario);
 
-    if (precioReal === PrecioIngresado) {
-      setResultado('Adivinaeste el precio');
+    if (precioReal === precioIngresado) {
+      setResultado('Adivinaste el precio');
     } else {
       setResultado('No adivinaste el precio');
     }
   };
 
-  if (!producto) {
-    return (
-      <View style={styles.contenedor}>
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
+  // 🔹 Render del menú
   const menuOpciones = () => {
     switch (menu) {
       case 'menu':
@@ -53,13 +66,18 @@ export default function App() {
             <Text style={styles.title}>Menú</Text>
 
             <View style={styles.boton}>
-              <Button title="Lista conectada con API" onPress={() => setMenu('lista_api')} />
+              <Button 
+                title="Lista conectada con API" 
+                onPress={() => {
+                  setMenu('lista_api');
+                  fetchListaProductos();
+                }} 
+              />
             </View>
 
             <View style={styles.boton}>
               <Button title="Original" onPress={() => setMenu('original')} />
             </View>
-
           </View>
         );
 
@@ -67,7 +85,21 @@ export default function App() {
         return (
           <View style={styles.contenedor}>
             <Text style={styles.title}>Lista conectada con API</Text>
-            // INGRESA AQUI LA LISA DE LA API
+
+            <FlatList
+              data={listaProductos}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.producto}>
+                  <Text style={styles.nombreProd}>{item.title}</Text>
+                  <Text style={styles.descProd}>{item.description}</Text>
+                  <Text style={{ textAlign: 'center', marginTop: 5 }}>
+                    Precio: ${item.price}
+                  </Text>
+                </View>
+              )}
+            />
+
             <Button title="Volver" onPress={() => setMenu('menu')} />
           </View>
         );
@@ -80,7 +112,6 @@ export default function App() {
 
             <View style={styles.producto}>
               <Text style={styles.nombreProd}>{producto.title}</Text>
-
               <Text style={styles.descProd}>{producto.description}</Text>
             </View>
 
@@ -107,10 +138,7 @@ export default function App() {
             </View>
 
             <Button title="Volver" onPress={() => setMenu('menu')} />
-
           </View>
-
-
         );
 
       default:
@@ -119,11 +147,13 @@ export default function App() {
   };
 
   return (
-    <View style={{ flex: 1 }}>{menuOpciones()}</View>
-
+    <View style={{ flex: 1 }}>
+      {menuOpciones()}
+    </View>
   );
 }
 
+// 🔹 Estilos
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
@@ -139,7 +169,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#babeee',
     padding: 15,
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 10,
     width: '100%',
   },
   nombreProd: {
